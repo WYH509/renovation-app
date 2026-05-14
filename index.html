@@ -404,16 +404,28 @@
         <label class="form-label">总价（元）</label>
         <input class="form-control" type="number" id="itemTotal" placeholder="0" inputmode="decimal">
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">首付比例 %</label>
-          <input class="form-control" type="number" id="itemDepositPct" placeholder="30" inputmode="decimal" max="100" min="0">
+      <div style="margin:6px 0 2px"><span style="font-size:13px;font-weight:600;color:var(--label2)">付款计划</span><span style="font-size:12px;color:var(--label3);margin-left:6px">第1笔必填，后续选填</span></div>
+      <div class="form-group" style="background:var(--fill);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:500;color:var(--ios-blue)">第1笔</span>
+          <span style="font-size:12px;color:var(--ios-red)">*必填</span>
         </div>
-        <div class="form-group">
-          <label class="form-label">尾款比例 %</label>
-          <input class="form-control" type="number" id="itemBalancePct" placeholder="70" inputmode="decimal" max="100" min="0">
+        <div style="display:flex;gap:8px">
+          <input class="form-control" type="number" id="itemPay1Amt" placeholder="金额（元）" inputmode="decimal" style="flex:1;font-size:14px">
+          <input class="form-control" type="date" id="itemPay1Date" style="flex:1;font-size:14px">
         </div>
       </div>
+      ${[2,3,4].map(n=>`
+      <div class="form-group" style="background:var(--fill);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:500;color:var(--label2)">第${n}笔</span>
+          <span style="font-size:12px;color:var(--label3)">选填</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <input class="form-control" type="number" id="itemPay${n}Amt" placeholder="金额（元）" inputmode="decimal" style="flex:1;font-size:14px">
+          <input class="form-control" type="date" id="itemPay${n}Date" style="flex:1;font-size:14px">
+        </div>
+      </div>`).join('')}
       <div class="form-group">
         <label class="form-label">交货期（天后 或 具体日期）</label>
         <input class="form-control" type="text" id="itemDelivery" placeholder="例：30  或  2026-06-15">
@@ -1046,16 +1058,22 @@ function openAddModal(editId) {
       document.getElementById('itemCategory').value = item.category||'其他';
       document.getElementById('itemStatus').value = item.status||'待采购';
       document.getElementById('itemTotal').value = item.total||'';
-      document.getElementById('itemDepositPct').value = item.depositPct||'';
-      document.getElementById('itemBalancePct').value = item.balancePct||'';
+      for (let n=1;n<=4;n++) {
+        document.getElementById('itemPay'+n+'Amt').value = item['pay'+n+'Amt']||'';
+        document.getElementById('itemPay'+n+'Date').value = item['pay'+n+'Date']||'';
+      }
       document.getElementById('itemDelivery').value = item.delivery||'';
       document.getElementById('itemRemindDays').value = item.remindDays||'3';
       document.getElementById('itemNote').value = item.note||'';
     }
   } else {
-    ['itemName','itemTotal','itemDepositPct','itemBalancePct','itemDelivery','itemNote'].forEach(id=>{
+    ['itemName','itemTotal','itemDelivery','itemNote'].forEach(id=>{
       document.getElementById(id).value='';
     });
+    for (let n=1;n<=4;n++) {
+      document.getElementById('itemPay'+n+'Amt').value='';
+      document.getElementById('itemPay'+n+'Date').value='';
+    }
     document.getElementById('itemRemindDays').value='3';
     document.getElementById('itemCategory').value='其他';
     document.getElementById('itemStatus').value='待采购';
@@ -1066,17 +1084,21 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 function saveItem() {
   const name = document.getElementById('itemName').value.trim();
   if (!name) { alert('请输入项目名称'); return; }
+  const pay1Amt = parseFloat(document.getElementById('itemPay1Amt').value)||0;
+  if (!pay1Amt) { alert('请填写第1笔付款金额'); return; }
   const editId = document.getElementById('editItemId').value;
   const data = {
     name, category: document.getElementById('itemCategory').value,
     status: document.getElementById('itemStatus').value,
     total: parseFloat(document.getElementById('itemTotal').value)||0,
-    depositPct: parseFloat(document.getElementById('itemDepositPct').value)||0,
-    balancePct: parseFloat(document.getElementById('itemBalancePct').value)||0,
     delivery: document.getElementById('itemDelivery').value.trim(),
     remindDays: parseInt(document.getElementById('itemRemindDays').value)||3,
     note: document.getElementById('itemNote').value.trim(),
   };
+  for (let n=1;n<=4;n++) {
+    data['pay'+n+'Amt'] = parseFloat(document.getElementById('itemPay'+n+'Amt').value)||0;
+    data['pay'+n+'Date'] = document.getElementById('itemPay'+n+'Date').value||'';
+  }
   if (editId) {
     const idx = store.items.findIndex(i=>i.id===editId);
     if (idx>=0) Object.assign(store.items[idx], data);
@@ -1140,6 +1162,18 @@ function openDetail(itemId) {
       </div>`;
   }
   document.getElementById('detailTitle').textContent = item.name;
+  // Build payment plan rows
+  const payPlanRows = [];
+  for (let n=1;n<=4;n++) {
+    const amt = Number(item['pay'+n+'Amt']||0);
+    const date = item['pay'+n+'Date']||'';
+    if (amt) {
+      const dateStr = date ? date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$2/$3') : '—';
+      payPlanRows.push(`<div class="list-row" style="padding:6px 0"><div style="flex:1;font-size:14px;color:var(--label2)">第${n}笔</div><div style="font-size:14px;font-weight:500">¥${fmt(amt)}</div><div style="font-size:12px;color:var(--label3);margin-left:10px">${dateStr}</div></div>`);
+    }
+  }
+  const payPlanHtml = payPlanRows.length
+    ? `<div style="margin-bottom:12px"><div style="padding:4px 16px 8px;font-size:13px;font-weight:600;color:var(--label2)">付款计划</div><div class="list-group" style="padding:0 16px">${payPlanRows.join('')}</div></div>` : '';
   document.getElementById('detailBody').innerHTML = `
     <div class="list-group" style="margin-bottom:12px">
       <div class="list-row">
@@ -1157,6 +1191,7 @@ function openDetail(itemId) {
       ${deliveryHtml}
       ${item.note?`<div class="list-row"><div style="flex:1;font-size:15px">备注</div><div style="font-size:14px;color:var(--label2)">${item.note}</div></div>`:''}
     </div>
+    ${payPlanHtml}
     <div class="list-group" style="margin-bottom:12px;padding:14px 16px">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px">
         <span style="font-size:14px;color:var(--label2)">付款进度</span>
@@ -1505,15 +1540,15 @@ function seedDemo() {
   if (store.items.length) return;
   const now = Date.now();
   store.items = [
-    {id:'demo1',createdAt:now-86400000*5,name:'客厅木地板',category:'地板',status:'已下单',total:18000,depositPct:30,balancePct:70,delivery:'15',remindDays:3,note:'强化复合地板'},
-    {id:'demo2',createdAt:now-86400000*3,name:'卫浴洁具套装',category:'卫浴',status:'待采购',total:8500,depositPct:50,balancePct:50,delivery:'20',remindDays:3,note:''},
-    {id:'demo3',createdAt:now-86400000*2,name:'水电改造人工',category:'水电',status:'已完成',total:12000,depositPct:30,balancePct:70,delivery:'',remindDays:3,note:''},
-    {id:'demo4',createdAt:now-86400000*1,name:'厨房橱柜',category:'厨房',status:'待采购',total:25000,depositPct:30,balancePct:70,delivery:'2026-05-25',remindDays:5,note:'欧派定制'},
+    {id:'demo1',createdAt:now-86400000*5,name:'客厅木地板',category:'地板',status:'已下单',total:18000,pay1Amt:5400,pay1Date:'2026-05-08',pay2Amt:12600,pay2Date:'2026-05-20',delivery:'15',remindDays:3,note:'强化复合地板'},
+    {id:'demo2',createdAt:now-86400000*3,name:'卫浴洁具套装',category:'卫浴',status:'待采购',total:8500,pay1Amt:4250,pay1Date:'',pay2Amt:4250,pay2Date:'',delivery:'20',remindDays:3,note:''},
+    {id:'demo3',createdAt:now-86400000*2,name:'水电改造人工',category:'水电',status:'已完成',total:12000,pay1Amt:3600,pay1Date:'2026-05-09',pay2Amt:8400,pay2Date:'2026-05-11',delivery:'',remindDays:3,note:'验收合格'},
+    {id:'demo4',createdAt:now-86400000*1,name:'厨房橱柜',category:'厨房',status:'待采购',total:25000,pay1Amt:5000,pay1Date:'2026-05-12',pay2Amt:20000,pay2Date:'',delivery:'2026-05-25',remindDays:5,note:'欧派定制'},
   ];
   store.payments = [
-    {id:'p1',itemId:'demo1',phase:'首付',amount:5400,date:'2026-05-08',note:'',createdAt:now-86400000*3},
-    {id:'p2',itemId:'demo3',phase:'尾款',amount:12000,date:'2026-05-11',note:'验收合格',createdAt:now-86400000*2},
-    {id:'p3',itemId:'demo4',phase:'定金',amount:5000,date:'2026-05-12',note:'',createdAt:now-86400000*1},
+    {id:'p1',itemId:'demo1',phase:'第1笔',amount:5400,date:'2026-05-08',note:'',createdAt:now-86400000*3},
+    {id:'p2',itemId:'demo3',phase:'第2笔',amount:8400,date:'2026-05-11',note:'验收合格',createdAt:now-86400000*2},
+    {id:'p3',itemId:'demo4',phase:'第1笔',amount:5000,date:'2026-05-12',note:'',createdAt:now-86400000*1},
   ];
 }
 
