@@ -405,7 +405,7 @@
         <input class="form-control" type="number" id="itemTotal" placeholder="0" inputmode="decimal">
       </div>
       <div style="margin:6px 0 2px"><span style="font-size:13px;font-weight:600;color:var(--label2)">付款计划</span><span style="font-size:12px;color:var(--label3);margin-left:6px">第1笔必填，后续选填</span></div>
-      <div class="form-group" style="background:var(--fill);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px">
+      <div style="background:var(--fill);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <span style="font-size:13px;font-weight:500;color:var(--ios-blue)">第1笔</span>
           <span style="font-size:12px;color:var(--ios-red)">*必填</span>
@@ -415,17 +415,36 @@
           <input class="form-control" type="date" id="itemPay1Date" style="flex:1;font-size:14px">
         </div>
       </div>
-      ${[2,3,4].map(n=>`
-      <div class="form-group" style="background:var(--fill);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px">
+      <div style="background:var(--fill);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <span style="font-size:13px;font-weight:500;color:var(--label2)">第${n}笔</span>
+          <span style="font-size:13px;font-weight:500;color:var(--label2)">第2笔</span>
           <span style="font-size:12px;color:var(--label3)">选填</span>
         </div>
         <div style="display:flex;gap:8px">
-          <input class="form-control" type="number" id="itemPay${n}Amt" placeholder="金额（元）" inputmode="decimal" style="flex:1;font-size:14px">
-          <input class="form-control" type="date" id="itemPay${n}Date" style="flex:1;font-size:14px">
+          <input class="form-control" type="number" id="itemPay2Amt" placeholder="金额（元）" inputmode="decimal" style="flex:1;font-size:14px">
+          <input class="form-control" type="date" id="itemPay2Date" style="flex:1;font-size:14px">
         </div>
-      </div>`).join('')}
+      </div>
+      <div style="background:var(--fill);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:500;color:var(--label2)">第3笔</span>
+          <span style="font-size:12px;color:var(--label3)">选填</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <input class="form-control" type="number" id="itemPay3Amt" placeholder="金额（元）" inputmode="decimal" style="flex:1;font-size:14px">
+          <input class="form-control" type="date" id="itemPay3Date" style="flex:1;font-size:14px">
+        </div>
+      </div>
+      <div style="background:var(--fill);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:500;color:var(--label2)">第4笔</span>
+          <span style="font-size:12px;color:var(--label3)">选填</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <input class="form-control" type="number" id="itemPay4Amt" placeholder="金额（元）" inputmode="decimal" style="flex:1;font-size:14px">
+          <input class="form-control" type="date" id="itemPay4Date" style="flex:1;font-size:14px">
+        </div>
+      </div>
       <div class="form-group">
         <label class="form-label">交货期（天后 或 具体日期）</label>
         <input class="form-control" type="text" id="itemDelivery" placeholder="例：30  或  2026-06-15">
