@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="装修账本">
+<title>装修账本</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --ios-blue: #007AFF;
+    --ios-red: #FF3B30;
+    --ios-orange: #FF9500;
+    --ios-green: #34C759;
+    --ios-yellow: #FFCC00;
+    --ios-purple: #AF52DE;
+    --ios-teal: #5AC8FA;
+    --ios-indigo: #5856D6;
+    --bg: #F2F2F7;
+    --card: #FFFFFF;
+    --label: #000000;
+    --label2: #3C3C43CC;
+    --label3: #3C3C4399;
+    --separator: #3C3C432E;
+    --fill: #78788014;
+    --fill2: #7878801F;
+    --system-blue: #007AFF;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--label);
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Nav Bar */
+  .nav-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(242,242,247,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 0.5px solid var(--separator);
+    padding: 0 16px;
+  }
+  .nav-title {
+    font-size: 17px; font-weight: 600; letter-spacing: -0.4px;
+    text-align: center; padding: 11px 0;
+  }
+  /* Tab Bar */
+  .tab-bar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    background: rgba(242,242,247,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 0.5px solid var(--separator);
+    display: flex; z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+  }
+  .tab-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 8px 0 4px;
+    cursor: pointer; user-select: none;
+    color: var(--label3); font-size: 10px; font-weight: 500;
+    gap: 2px; transition: color 0.15s;
+  }
+  .tab-item.active { color: var(--ios-blue); }
+  .tab-item svg { width: 24px; height: 24px; }
+  /* Content */
+  .content {
+    padding: 16px 16px 100px;
+    display: none;
+  }
+  .content.active { display: block; }
+  /* Section Headers */
+  .section-header {
+    font-size: 13px; font-weight: 400; color: var(--label2);
+    text-transform: uppercase; letter-spacing: 0.4px;
+    padding: 0 4px 6px; margin-top: 24px; margin-bottom: 0;
+  }
+  .section-header:first-child { margin-top: 8px; }
+  /* Cards / List Groups */
+  .list-group {
+    background: var(--card); border-radius: var(--radius);
+    overflow: hidden; margin-bottom: 2px;
+  }
+  .list-row {
+    display: flex; align-items: center; padding: 12px 16px;
+    border-bottom: 0.5px solid var(--separator);
+    min-height: 44px; gap: 12px;
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-row-icon {
+    width: 30px; height: 30px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 16px;
+  }
+  .list-row-content { flex: 1; min-width: 0; }
+  .list-row-title { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list-row-subtitle { font-size: 13px; color: var(--label3); margin-top: 1px; }
+  .list-row-right { color: var(--label3); font-size: 15px; text-align: right; flex-shrink: 0; }
+  .chevron { color: var(--label3); font-size: 13px; opacity: 0.5; }
+  /* Metric Cards */
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 2px; }
+  .metric-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .metric-label { font-size: 12px; color: var(--label3); margin-bottom: 4px; }
+  .metric-value { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+  .metric-sub { font-size: 12px; color: var(--label3); margin-top: 2px; }
+  /* Progress Bar */
+  .progress-wrap { background: var(--fill2); border-radius: 4px; height: 6px; overflow: hidden; margin-top: 8px; }
+  .progress-bar { height: 100%; border-radius: 4px; transition: width 0.4s; }
+  /* Badges */
+  .badge {
+    display: inline-block; font-size: 12px; font-weight: 500;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .badge-blue { background: #007AFF22; color: var(--ios-blue); }
+  .badge-green { background: #34C75922; color: var(--ios-green); }
+  .badge-orange { background: #FF950022; color: var(--ios-orange); }
+  .badge-red { background: #FF3B3022; color: var(--ios-red); }
+  .badge-purple { background: #AF52DE22; color: var(--ios-purple); }
+  /* Buttons */
+  .btn-primary {
+    background: var(--ios-blue); color: #fff;
+    border: none; border-radius: var(--radius-sm);
+    font-size: 16px; font-weight: 500;
+    padding: 13px 20px; width: 100%; cursor: pointer;
+    letter-spacing: -0.2px;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:active { opacity: 0.7; }
+  .btn-secondary {
+    background: var(--fill); color: var(--ios-blue);
+    border: none; border-radius: var(--radius-sm);
+    font-size: 15px; font-weight: 500;
+    padding: 10px 20px; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-secondary:active { opacity: 0.7; }
+  .btn-danger {
+    background: #FF3B3011; color: var(--ios-red);
+    border: none; border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 500;
+    padding: 8px 14px; cursor: pointer;
+  }
+  /* Floating Add Button */
+  .fab {
+    position: fixed; bottom: calc(env(safe-area-inset-bottom, 8px) + 68px); right: 24px;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--ios-blue); color: #fff;
+    border: none; font-size: 28px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(0,122,255,0.35);
+    z-index: 99; transition: transform 0.15s;
+  }
+  .fab:active { transform: scale(0.92); }
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.4);
+    display: none; align-items: flex-end;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet {
+    background: var(--bg);
+    border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 430px;
+    margin: 0 auto;
+    max-height: 92vh; overflow-y: auto;
+    padding: 0 0 env(safe-area-inset-bottom, 16px);
+    animation: slideUp 0.28s cubic-bezier(0.32,0.72,0,1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 16px 0;
+    position: sticky; top: 0;
+    background: var(--bg); z-index: 1;
+    border-bottom: 0.5px solid var(--separator);
+    padding-bottom: 12px;
+  }
+  .modal-title { font-size: 17px; font-weight: 600; }
+  .modal-close {
+    background: var(--fill2); border: none; border-radius: 50%;
+    width: 28px; height: 28px; cursor: pointer;
+    font-size: 15px; color: var(--label2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-body { padding: 16px; }
+  /* Form */
+  .form-group { margin-bottom: 20px; }
+  .form-label {
+    font-size: 13px; font-weight: 500; color: var(--label2);
+    margin-bottom: 6px; display: block; text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .form-control {
+    background: var(--card); border: 0.5px solid var(--separator);
+    border-radius: var(--radius-sm); padding: 12px 14px;
+    font-size: 16px; width: 100%; color: var(--label);
+    font-family: inherit; outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .form-control:focus { border-color: var(--ios-blue); }
+  select.form-control { cursor: pointer; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  /* Alerts */
+  .alert-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 14px 16px; display: flex; align-items: flex-start;
+    gap: 12px; margin-bottom: 2px; border-left: 3px solid;
+  }
+  .alert-icon { font-size: 20px; flex-shrink: 0; }
+  .alert-content { flex: 1; }
+  .alert-title { font-size: 15px; font-weight: 500; }
+  .alert-sub { font-size: 13px; color: var(--label3); margin-top: 2px; }
+  /* Summary Chart */
+  .chart-wrap { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
+  .chart-title { font-size: 15px; font-weight: 500; margin-bottom: 14px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bar-label { font-size: 13px; color: var(--label2); width: 70px; flex-shrink: 0; text-align: right; }
+  .bar-track { flex: 1; background: var(--fill2); border-radius: 4px; height: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+  .bar-amount { font-size: 12px; color: var(--label2); width: 70px; text-align: right; flex-shrink: 0; }
+  /* Empty State */
+  .empty-state { text-align: center; padding: 48px 24px; }
+  .empty-icon { font-size: 52px; margin-bottom: 12px; }
+  .empty-title { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .empty-sub { font-size: 15px; color: var(--label3); }
+  /* Delete slide */
+  .item-delete-btn {
+    background: var(--ios-red); color: #fff;
+    border: none; border-radius: var(--radius-sm);
+    font-size: 13px; padding: 5px 10px; cursor: pointer;
+  }
+  /* Segmented Control */
+  .seg-ctrl {
+    background: var(--fill2); border-radius: var(--radius-sm);
+    padding: 2px; display: flex; margin-bottom: 16px;
+  }
+  .seg-btn {
+    flex: 1; border: none; border-radius: 7px;
+    padding: 6px 0; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; background: none; color: var(--label2);
+  }
+  .seg-btn.active {
+    background: var(--card); color: var(--label);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  /* Payment log */
+  .pay-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 0.5px solid var(--separator);
+    font-size: 14px;
+  }
+  .pay-row:last-child { border-bottom: none; }
+  /* Notification dot */
+  .notif-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--ios-red);
+    position: absolute; top: 6px; right: 20px;
+  }
+  .tab-item { position: relative; }
+</style>
+</head>
+<body>
+
+<!-- NAV BAR -->
+<div class="nav-bar" style="display:flex;align-items:center;justify-content:space-between;padding:0 16px">
+  <div style="width:44px"></div>
+  <div class="nav-title" id="navTitle">装修账本</div>
+  <button onclick="openSyncModal()" style="background:none;border:none;cursor:pointer;padding:8px;color:var(--ios-blue);display:flex;align-items:center" title="云同步">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+  </button>
+</div>
+
+<!-- TAB CONTENT AREAS -->
+<div class="content active" id="tab-overview">
+  <!-- Overview injected by JS -->
+</div>
+
+<div class="content" id="tab-items">
+  <!-- Items injected by JS -->
+</div>
+
+<div class="content" id="tab-payments">
+  <!-- Payments injected by JS -->
+</div>
+
+<div class="content" id="tab-alerts">
+  <!-- Alerts injected by JS -->
+</div>
+
+<div class="content" id="tab-stats">
+  <!-- Stats injected by JS -->
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <div class="tab-item active" onclick="switchTab('overview',this)" data-tab="overview">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+    </svg>
+    总览
+  </div>
+  <div class="tab-item" onclick="switchTab('items',this)" data-tab="items">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+      <line x1="8" y1="18" x2="21" y2="18"/>
+      <circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/>
+      <circle cx="3" cy="18" r="1" fill="currentColor"/>
+    </svg>
+    采购清单
+  </div>
+  <div class="tab-item" onclick="switchTab('payments',this)" data-tab="payments">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+      <line x1="1" y1="10" x2="23" y2="10"/>
+    </svg>
+    付款
+  </div>
+  <div class="tab-item" onclick="switchTab('alerts',this)" data-tab="alerts">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+    提醒
+  </div>
+  <div class="tab-item" onclick="switchTab('stats',this)" data-tab="stats">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+      <line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+    统计
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fabBtn" onclick="openAddModal()" title="添加">+</button>
+
+<!-- ADD ITEM MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">添加采购项目</span>
+      <button class="modal-close" onclick="closeModal('addModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editItemId" value="">
+      <div class="form-group">
+        <label class="form-label">项目名称</label>
+        <input class="form-control" type="text" id="itemName" placeholder="例：客厅地板">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">工序分类</label>
+          <select class="form-control" id="itemCategory">
+            <option value="水电">水电</option>
+            <option value="瓦工">瓦工</option>
+            <option value="木工">木工</option>
+            <option value="油漆">油漆</option>
+            <option value="地板">地板</option>
+            <option value="门窗">门窗</option>
+            <option value="卫浴">卫浴</option>
+            <option value="厨房">厨房</option>
+            <option value="灯具">灯具</option>
+            <option value="家具">家具</option>
+            <option value="软装">软装</option>
+            <option value="主材">主材</option>
+            <option value="人工">人工</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">状态</label>
+          <select class="form-control" id="itemStatus">
+            <option value="待采购">待采购</option>
+            <option value="已下单">已下单</option>
+            <option value="已到货">已到货</option>
+            <option value="已安装">已安装</option>
+            <option value="已完成">已完成</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">总价（元）</label>
+        <input class="form-control" type="number" id="itemTotal" placeholder="0" inputmode="decimal">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">首付比例 %</label>
+          <input class="form-control" type="number" id="itemDepositPct" placeholder="30" inputmode="decimal" max="100" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">尾款比例 %</label>
+          <input class="form-control" type="number" id="itemBalancePct" placeholder="70" inputmode="decimal" max="100" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">交货期（天后 或 具体日期）</label>
+        <input class="form-control" type="text" id="itemDelivery" placeholder="例：30  或  2026-06-15">
+      </div>
+      <div class="form-group">
+        <label class="form-label">提前几天提醒</label>
+        <input class="form-control" type="number" id="itemRemindDays" placeholder="3" inputmode="numeric" value="3">
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <input class="form-control" type="text" id="itemNote" placeholder="可选备注">
+      </div>
+      <button class="btn-primary" onclick="saveItem()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT LOG MODAL -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title">记录付款</span>
+      <button class="modal-close" onclick="closeModal('payModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--label2);margin-bottom:12px;" id="payModalItemName">项目：</div>
+      <input type="hidden" id="payItemId">
+      <div class="form-group">
+        <label class="form-label">付款阶段</label>
+        <select class="form-control" id="payPhase">
+          <option value="定金">定金</option>
+          <option value="首付">首付</option>
+          <option value="中期款">中期款</option>
+          <option value="尾款">尾款</option>
+          <option value="补款">补款</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">金额（元）</label>
+          <input class="form-control" type="number" id="payAmount" placeholder="0" inputmode="decimal">
+        </div>
+        <div class="form-group">
+          <label class="form-label">日期</label>
+          <input class="form-control" type="date" id="payDate">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <input class="form-control" type="text" id="payNote" placeholder="可选">
+      </div>
+      <button class="btn-primary" onclick="savePayment()">确认付款</button>
+    </div>
+  </div>
+</div>
+
+<!-- ITEM DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title" id="detailTitle">详情</span>
+      <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    </div>
+    <div class="modal-body" id="detailBody">
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-sheet" style="max-width:340px;border-radius:14px;padding-bottom:24px">
+    <div style="padding:24px 20px 20px;text-align:center">
+      <div style="font-size:20px;margin-bottom:8px" id="confirmTitle">确认删除？</div>
+      <div style="font-size:14px;color:var(--label3)" id="confirmMsg">此操作不可撤销。</div>
+    </div>
+    <div style="display:flex;gap:10px;padding:0 20px 4px">
+      <button style="flex:1;background:var(--fill2);border:none;border-radius:var(--radius-sm);padding:12px;font-size:16px;font-weight:500;cursor:pointer" onclick="closeModal('confirmModal')">取消</button>
+      <button id="confirmBtn" style="flex:1;background:var(--ios-red);color:#fff;border:none;border-radius:var(--radius-sm);padding:12px;font-size:16px;font-weight:500;cursor:pointer">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLOUD SYNC MODAL -->
+<div class="modal-overlay" id="syncModal">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title">跨设备同步</span>
+      <button class="modal-close" onclick="closeModal('syncModal')">✕</button>
+    </div>
+    <div class="modal-body" id="syncBody">
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA STORE (IndexedDB for durability) ─────────────────────
+const DB_NAME = 'renovation_db';
+const DB_VERSION = 1;
+const STORE_KEY = 'renov_store';
+let store = { items: [], payments: [], projectName: '我的装修' };
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const database = e.target.result;
+      if (!database.objectStoreNames.contains('data')) {
+        database.createObjectStore('data', { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function load() {
+  _gistUrl = localStorage.getItem('renov_gist_url') || '';
+  _gistId = localStorage.getItem('renov_gist_id') || '';
+  _ghToken = localStorage.getItem('renov_gh_token') || '';
+  _autoSync = !!_ghToken;
+  try {
+    db = await openDB();
+    // Try loading from Gist first (if token set)
+    if (_autoSync && _gistId) {
+      try {
+        const r = await fetch('https://api.github.com/gists/' + _gistId, {
+          headers: { 'Authorization': 'Bearer ' + _ghToken, 'Accept': 'application/vnd.github+json' }
+        });
+        if (r.ok) {
+          const data = await r.json();
+          const file = data.files && data.files['renovation_data.json'];
+          if (file && file.content) {
+            const parsed = JSON.parse(file.content);
+            if (parsed.items && parsed.payments) {
+              store = parsed;
+              // Save to IndexedDB
+              const tx2 = db.transaction('data', 'readwrite');
+              tx2.objectStore('data').put({ key: STORE_KEY, value: store });
+              return;
+            }
+          }
+        }
+      } catch(gistErr) { /* fall through to IndexedDB */ }
+    }
+    // Fallback to IndexedDB
+    const tx = db.transaction('data', 'readonly');
+    const os = tx.objectStore('data');
+    const req = os.get(STORE_KEY);
+    return new Promise((resolve) => {
+      req.onsuccess = () => {
+        if (req.result && req.result.value) store = req.result.value;
+        resolve();
+      };
+      req.onerror = () => resolve();
+    });
+  } catch(e) {
+    try {
+      const raw = localStorage.getItem('renovation_app_v2');
+      if (raw) store = JSON.parse(raw);
+    } catch(e2) {}
+  }
+}
+
+async function save() {
+  try {
+    if (db) {
+      const tx = db.transaction('data', 'readwrite');
+      const os = tx.objectStore('data');
+      os.put({ key: STORE_KEY, value: store });
+      await new Promise((resolve, reject) => {
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+    // Auto-sync to GitHub Gist (when token is configured)
+    autoSyncToGist();
+  } catch(e) {
+    try { localStorage.setItem('renovation_app_v2', JSON.stringify(store)); } catch(e2) {}
+  }
+}
+
+// ─── CLOUD SYNC
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function fmt(n) { return (n||0).toLocaleString('zh-CN'); }
+function today() { return new Date().toISOString().slice(0,10); }
+function parseDelivery(val, createdAt) {
+  if (!val) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+  const days = parseInt(val);
+  if (!isNaN(days)) {
+    const base = new Date(createdAt || Date.now());
+    base.setDate(base.getDate() + days);
+    return base.toISOString().slice(0,10);
+  }
+  return null;
+}
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const t = new Date(); t.setHours(0,0,0,0);
+  const d = new Date(dateStr);
+  return Math.round((d - t) / 86400000);
+}
+function categoryColor(cat) {
+  const map = {
+    '水电':'#007AFF','瓦工':'#FF9500','木工':'#8E6C3C','油漆':'#FF3B30',
+    '地板':'#5AC8FA','门窗':'#34C759','卫浴':'#007AFF','厨房':'#FF6B35',
+    '灯具':'#FFCC00','家具':'#AF52DE','软装':'#FF2D55','主材':'#5856D6',
+    '人工':'#636366','其他':'#8E8E93'
+  };
+  return map[cat] || '#8E8E93';
+}
+function statusBadge(s) {
+  const map = {
+    '待采购':'badge-blue','已下单':'badge-orange','已到货':'badge-purple',
+    '已安装':'badge-blue','已完成':'badge-green'
+  };
+  return `<span class="badge ${map[s]||'badge-blue'}">${s}</span>`;
+}
+function paidAmount(itemId) {
+  return store.payments.filter(p=>p.itemId===itemId).reduce((a,p)=>a+Number(p.amount),0);
+}
+
+// ─── TAB SWITCHING ────────────────────────────────────────────
+const tabTitles = {overview:'装修账本',items:'采购清单',payments:'付款记录',alerts:'催货提醒',stats:'费用统计'};
+function switchTab(tab, el) {
+  document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('navTitle').textContent = tabTitles[tab];
+  const fab = document.getElementById('fabBtn');
+  fab.style.display = (tab==='overview'||tab==='stats') ? 'none' : 'flex';
+  renderTab(tab);
+}
+function renderTab(tab) {
+  if (tab==='overview') renderOverview();
+  else if (tab==='items') renderItems();
+  else if (tab==='payments') renderPayments();
+  else if (tab==='alerts') renderAlerts();
+  else if (tab==='stats') renderStats();
+}
+
+// ─── OVERVIEW ────────────────────────────────────────────────
+function renderOverview() {
+  const el = document.getElementById('tab-overview');
+  const totalBudget = store.items.reduce((a,i)=>a+Number(i.total||0),0);
+  const totalPaid = store.payments.reduce((a,p)=>a+Number(p.amount||0),0);
+  const remaining = totalBudget - totalPaid;
+  const pct = totalBudget ? Math.round(totalPaid/totalBudget*100) : 0;
+  const urgent = getUrgentAlerts();
+  const syncBadge = _gistUrl
+    ? `<span style="font-size:11px;background:#34C75922;color:var(--ios-green);padding:2px 7px;border-radius:10px;margin-left:6px">Gist</span>`
+    : `<span style="font-size:11px;background:#7878801F;color:var(--label3);padding:2px 7px;border-radius:10px;margin-left:6px">本地</span>`;
+  const urgentHtml = urgent.length ? `
+    <p class="section-header">需要关注</p>
+    <div class="list-group">
+      ${urgent.slice(0,3).map(a=>`
+      <div class="list-row" onclick="switchTab('alerts',document.querySelector('[data-tab=alerts]'))">
+        <div class="list-row-icon" style="background:${a.type==='overdue'?'#FF3B3015':'#FF950015'}">
+          ${a.type==='overdue'?'🚨':'⏰'}
+        </div>
+        <div class="list-row-content">
+          <div class="list-row-title" style="font-size:15px">${a.name}</div>
+          <div class="list-row-subtitle">${a.msg}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+  ` : '';
+  // recent items
+  const recent = [...store.items].sort((a,b)=>b.createdAt-a.createdAt).slice(0,4);
+  el.innerHTML = `
+    <p class="section-header" style="margin-top:8px">总体进度 ${syncBadge}</p>
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-label">总预算</div>
+        <div class="metric-value" style="color:var(--ios-blue)">¥${fmt(totalBudget)}</div>
+        <div class="metric-sub">${store.items.length} 个项目</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">已付款</div>
+        <div class="metric-value" style="color:var(--ios-green)">¥${fmt(totalPaid)}</div>
+        <div class="metric-sub">占 ${pct}%</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">剩余待付</div>
+        <div class="metric-value" style="color:var(--ios-orange)">¥${fmt(remaining)}</div>
+        <div class="metric-sub">&nbsp;</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">待交货</div>
+        <div class="metric-value" style="color:var(--ios-purple)">${store.items.filter(i=>i.status!=='已完成').length}</div>
+        <div class="metric-sub">项未完成</div>
+      </div>
+    </div>
+    <div class="list-group" style="margin-top:10px;padding:16px">
+      <div class="metric-label" style="margin-bottom:6px">付款进度</div>
+      <div class="progress-wrap">
+        <div class="progress-bar" style="width:${pct}%;background:${pct===100?'var(--ios-green)':'var(--ios-blue)'}"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--label3)">
+        <span>已付 ¥${fmt(totalPaid)}</span>
+        <span>${pct}%</span>
+        <span>共 ¥${fmt(totalBudget)}</span>
+      </div>
+    </div>
+    ${urgentHtml}
+    ${recent.length?`
+    <p class="section-header">最近项目</p>
+    <div class="list-group">
+      ${recent.map(item=>`
+      <div class="list-row" onclick="openDetail('${item.id}')">
+        <div class="list-row-icon" style="background:${categoryColor(item.category)}22;color:${categoryColor(item.category)};font-weight:600;font-size:13px">${item.category.slice(0,2)}</div>
+        <div class="list-row-content">
+          <div class="list-row-title">${item.name}</div>
+          <div class="list-row-subtitle">¥${fmt(item.total)}</div>
+        </div>
+        <div class="list-row-right">${statusBadge(item.status)}</div>
+      </div>`).join('')}
+    </div>` : `
+    <div class="empty-state">
+      <div class="empty-icon">🏠</div>
+      <div class="empty-title">开始记录装修</div>
+      <div class="empty-sub">在采购清单里添加第一个项目</div>
+    </div>`}
+  `;
+}
+
+// ─── ITEMS ───────────────────────────────────────────────────
+let itemFilter = 'all';
+function renderItems() {
+  const el = document.getElementById('tab-items');
+  const cats = ['all',...new Set(store.items.map(i=>i.category))];
+  let filtered = itemFilter==='all' ? store.items : store.items.filter(i=>i.category===itemFilter);
+  filtered = [...filtered].sort((a,b)=>b.createdAt-a.createdAt);
+  el.innerHTML = `
+    <div class="seg-ctrl">
+      <button class="seg-btn ${itemFilter==='all'?'active':''}" onclick="setItemFilter('all')">全部</button>
+      <button class="seg-btn ${itemFilter==='pending'?'active':''}" onclick="setItemFilter('pending')">进行中</button>
+      <button class="seg-btn ${itemFilter==='done'?'active':''}" onclick="setItemFilter('done')">已完成</button>
+    </div>
+    ${filtered.length===0?`<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-title">暂无项目</div><div class="empty-sub">点击 + 添加采购项目</div></div>`:''}
+    <div class="list-group">
+      ${filtered.map(item=>{
+        const paid = paidAmount(item.id);
+        const pct = item.total ? Math.min(100,Math.round(paid/item.total*100)) : 0;
+        const dDate = parseDelivery(item.delivery, item.createdAt);
+        const days = daysUntil(dDate);
+        return `
+        <div class="list-row" style="flex-direction:column;align-items:stretch;gap:8px" onclick="openDetail('${item.id}')">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="list-row-icon" style="background:${categoryColor(item.category)}22;color:${categoryColor(item.category)};font-weight:600;font-size:12px">${item.category.slice(0,2)}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:16px;font-weight:500">${item.name}</div>
+              <div style="font-size:12px;color:var(--label3)">${item.category}${item.note?'・'+item.note:''}</div>
+            </div>
+            <div style="text-align:right">
+              ${statusBadge(item.status)}
+              <div style="font-size:13px;font-weight:500;margin-top:3px">¥${fmt(item.total)}</div>
+            </div>
+          </div>
+          <div>
+            <div class="progress-wrap">
+              <div class="progress-bar" style="width:${pct}%;background:${pct>=100?'var(--ios-green)':pct>0?'var(--ios-blue)':'var(--fill2)'}"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--label3)">
+              <span>已付 ¥${fmt(paid)} (${pct}%)</span>
+              ${dDate?`<span>${days===null?'':days<0?'<span style=color:var(--ios-red)>已逾期'+Math.abs(days)+'天</span>':days===0?'<span style=color:var(--ios-orange)>今日交货</span>':'距交货 '+days+' 天'}</span>`:''}
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+function setItemFilter(f) {
+  if (f==='pending') store._filterPending=true;
+  itemFilter = f;
+  if (f==='pending') {
+    store.items._filtered = store.items.filter(i=>i.status!=='已完成');
+  }
+  // rebuild with actual filter
+  const el = document.getElementById('tab-items');
+  let filtered;
+  if (f==='all') filtered = store.items;
+  else if (f==='pending') filtered = store.items.filter(i=>i.status!=='已完成');
+  else filtered = store.items.filter(i=>i.status==='已完成');
+  filtered = [...filtered].sort((a,b)=>b.createdAt-a.createdAt);
+  // rerender seg
+  document.querySelectorAll('.seg-btn').forEach((b,i)=>{
+    b.classList.toggle('active', ['all','pending','done'][i]===f);
+  });
+  const listGroup = el.querySelector('.list-group');
+  if (listGroup) listGroup.innerHTML = filtered.map(item=>{
+    const paid = paidAmount(item.id);
+    const pct = item.total ? Math.min(100,Math.round(paid/item.total*100)) : 0;
+    const dDate = parseDelivery(item.delivery, item.createdAt);
+    const days = daysUntil(dDate);
+    return `
+    <div class="list-row" style="flex-direction:column;align-items:stretch;gap:8px" onclick="openDetail('${item.id}')">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="list-row-icon" style="background:${categoryColor(item.category)}22;color:${categoryColor(item.category)};font-weight:600;font-size:12px">${item.category.slice(0,2)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:16px;font-weight:500">${item.name}</div>
+          <div style="font-size:12px;color:var(--label3)">${item.category}${item.note?'・'+item.note:''}</div>
+        </div>
+        <div style="text-align:right">
+          ${statusBadge(item.status)}
+          <div style="font-size:13px;font-weight:500;margin-top:3px">¥${fmt(item.total)}</div>
+        </div>
+      </div>
+      <div>
+        <div class="progress-wrap">
+          <div class="progress-bar" style="width:${pct}%;background:${pct>=100?'var(--ios-green)':pct>0?'var(--ios-blue)':'var(--fill2)'}"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--label3)">
+          <span>已付 ¥${fmt(paid)} (${pct}%)</span>
+          ${dDate?`<span>${days<0?'已逾期'+Math.abs(days)+'天':days===0?'今日交货':'距交货 '+days+' 天'}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── PAYMENTS ────────────────────────────────────────────────
+function renderPayments() {
+  const el = document.getElementById('tab-payments');
+  const payments = [...store.payments].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const totalPaid = payments.reduce((a,p)=>a+Number(p.amount||0),0);
+  if (!payments.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">暂无付款记录</div><div class="empty-sub">在采购清单里选择项目记录付款</div></div>`;
+    return;
+  }
+  // Group by date
+  const grouped = {};
+  payments.forEach(p=>{
+    if (!grouped[p.date]) grouped[p.date] = [];
+    grouped[p.date].push(p);
+  });
+  let html = `
+    <div class="metric-card" style="margin-bottom:10px">
+      <div class="metric-label">累计付款</div>
+      <div class="metric-value" style="color:var(--ios-green)">¥${fmt(totalPaid)}</div>
+    </div>
+  `;
+  Object.entries(grouped).forEach(([date, pays])=>{
+    const dayTotal = pays.reduce((a,p)=>a+Number(p.amount||0),0);
+    html += `
+      <p class="section-header">${date} <span style="float:right;font-size:12px;color:var(--label2)">¥${fmt(dayTotal)}</span></p>
+      <div class="list-group">
+        ${pays.map(p=>{
+          const item = store.items.find(i=>i.id===p.itemId);
+          return `
+          <div class="list-row">
+            <div class="list-row-icon" style="background:#34C75922;color:var(--ios-green);font-size:18px">💳</div>
+            <div class="list-row-content">
+              <div class="list-row-title" style="font-size:15px">${item?item.name:'未知项目'}</div>
+              <div class="list-row-subtitle">${p.phase}${p.note?'・'+p.note:''}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:16px;font-weight:500;color:var(--ios-green)">-¥${fmt(p.amount)}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ─── ALERTS ──────────────────────────────────────────────────
+function getUrgentAlerts() {
+  const alerts = [];
+  const t = today();
+  store.items.forEach(item=>{
+    if (item.status==='已完成') return;
+    const dDate = parseDelivery(item.delivery, item.createdAt);
+    if (!dDate) return;
+    const days = daysUntil(dDate);
+    const remind = Number(item.remindDays)||3;
+    if (days < 0) alerts.push({name:item.name, msg:`逾期 ${Math.abs(days)} 天未到货`, type:'overdue', days, id:item.id});
+    else if (days === 0) alerts.push({name:item.name, msg:`今日应交货`, type:'today', days, id:item.id});
+    else if (days <= remind) alerts.push({name:item.name, msg:`还有 ${days} 天交货`, type:'soon', days, id:item.id});
+  });
+  return alerts.sort((a,b)=>a.days-b.days);
+}
+function renderAlerts() {
+  const el = document.getElementById('tab-alerts');
+  const urgent = getUrgentAlerts();
+  // All upcoming
+  const upcoming = [];
+  store.items.forEach(item=>{
+    if (item.status==='已完成') return;
+    const dDate = parseDelivery(item.delivery, item.createdAt);
+    if (!dDate) return;
+    const days = daysUntil(dDate);
+    upcoming.push({item, dDate, days});
+  });
+  upcoming.sort((a,b)=>a.days-b.days);
+  let html = '';
+  if (urgent.length) {
+    html += `<p class="section-header" style="margin-top:8px">需要立即跟进</p>`;
+    urgent.forEach(a=>{
+      const color = a.type==='overdue'?'var(--ios-red)':a.type==='today'?'var(--ios-orange)':'var(--ios-yellow)';
+      html += `
+        <div class="alert-card" style="border-color:${color};margin-bottom:8px">
+          <div class="alert-icon">${a.type==='overdue'?'🚨':a.type==='today'?'📦':'⏰'}</div>
+          <div class="alert-content">
+            <div class="alert-title">${a.name}</div>
+            <div class="alert-sub" style="color:${color}">${a.msg}</div>
+          </div>
+          <button class="btn-secondary" style="font-size:12px;padding:6px 10px;flex-shrink:0" onclick="openDetail('${a.id}')">查看</button>
+        </div>`;
+    });
+  }
+  if (upcoming.length) {
+    html += `<p class="section-header">交货时间表</p>
+    <div class="list-group">`;
+    upcoming.forEach(({item,dDate,days})=>{
+      const color = days<0?'var(--ios-red)':days===0?'var(--ios-orange)':days<=3?'var(--ios-yellow)':'var(--label3)';
+      html += `
+        <div class="list-row" onclick="openDetail('${item.id}')">
+          <div class="list-row-icon" style="background:${categoryColor(item.category)}22;color:${categoryColor(item.category)};font-weight:600;font-size:12px">${item.category.slice(0,2)}</div>
+          <div class="list-row-content">
+            <div class="list-row-title" style="font-size:15px">${item.name}</div>
+            <div class="list-row-subtitle">${dDate}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;font-weight:500;color:${color}">${days<0?'逾期'+Math.abs(days)+'天':days===0?'今日':'还有'+days+'天'}</div>
+            ${statusBadge(item.status)}
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+  }
+  if (!urgent.length && !upcoming.length) {
+    html = `<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">一切正常</div><div class="empty-sub">没有需要跟进的项目</div></div>`;
+  }
+  // update tab badge
+  const alertTab = document.querySelector('[data-tab="alerts"]');
+  const dot = alertTab.querySelector('.notif-dot');
+  if (urgent.length && !dot) {
+    const d = document.createElement('div');
+    d.className = 'notif-dot';
+    alertTab.appendChild(d);
+  } else if (!urgent.length && dot) dot.remove();
+  el.innerHTML = html;
+}
+
+// ─── STATS ───────────────────────────────────────────────────
+function renderStats() {
+  const el = document.getElementById('tab-stats');
+  if (!store.items.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">暂无数据</div><div class="empty-sub">添加项目后查看统计</div></div>`;
+    return;
+  }
+  // By category
+  const catMap = {};
+  store.items.forEach(item=>{
+    if (!catMap[item.category]) catMap[item.category] = {budget:0,paid:0};
+    catMap[item.category].budget += Number(item.total||0);
+    catMap[item.category].paid += paidAmount(item.id);
+  });
+  const catArr = Object.entries(catMap).sort((a,b)=>b[1].budget-a[1].budget);
+  const maxBudget = catArr[0]?.[1]?.budget||1;
+  const totalBudget = store.items.reduce((a,i)=>a+Number(i.total||0),0);
+  const totalPaid = store.payments.reduce((a,p)=>a+Number(p.amount||0),0);
+  // Status breakdown
+  const statusMap = {};
+  store.items.forEach(i=>{ statusMap[i.status]=(statusMap[i.status]||0)+Number(i.total||0); });
+  let catBars = catArr.map(([cat,v])=>`
+    <div class="bar-row">
+      <div class="bar-label" style="color:${categoryColor(cat)};font-weight:500">${cat}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.round(v.budget/maxBudget*100)}%;background:${categoryColor(cat)}"></div>
+      </div>
+      <div class="bar-amount">¥${fmt(v.budget)}</div>
+    </div>`).join('');
+  let payBars = catArr.map(([cat,v])=>{
+    const pct = v.budget ? Math.round(v.paid/v.budget*100) : 0;
+    return `
+    <div class="bar-row">
+      <div class="bar-label" style="color:${categoryColor(cat)};font-weight:500">${cat}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%;background:${pct>=100?'var(--ios-green)':'var(--ios-blue)'}"></div>
+      </div>
+      <div class="bar-amount">${pct}%</div>
+    </div>`;}).join('');
+  el.innerHTML = `
+    <div class="metric-grid" style="margin-top:8px">
+      <div class="metric-card">
+        <div class="metric-label">总预算</div>
+        <div class="metric-value" style="color:var(--ios-blue)">¥${fmt(totalBudget)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">已付款</div>
+        <div class="metric-value" style="color:var(--ios-green)">¥${fmt(totalPaid)}</div>
+      </div>
+    </div>
+    <p class="section-header">按工序/分类 · 预算</p>
+    <div class="chart-wrap">${catBars}</div>
+    <p class="section-header">按工序/分类 · 付款进度</p>
+    <div class="chart-wrap">${payBars}</div>
+    <p class="section-header">项目明细</p>
+    <div class="list-group">
+      ${store.items.sort((a,b)=>Number(b.total)-Number(a.total)).map(item=>{
+        const paid = paidAmount(item.id);
+        const pct = item.total ? Math.round(paid/item.total*100) : 0;
+        return `
+        <div class="list-row" onclick="openDetail('${item.id}')">
+          <div class="list-row-icon" style="background:${categoryColor(item.category)}22;color:${categoryColor(item.category)};font-weight:600;font-size:12px">${item.category.slice(0,2)}</div>
+          <div class="list-row-content">
+            <div class="list-row-title" style="font-size:15px">${item.name}</div>
+            <div class="list-row-subtitle">${item.category} · 已付${pct}%</div>
+          </div>
+          <div style="text-align:right;font-size:13px;font-weight:500">¥${fmt(item.total)}</div>
+        </div>`;}).join('')}
+    </div>
+  `;
+}
+
+// ─── MODAL: ADD / EDIT ────────────────────────────────────────
+function openAddModal(editId) {
+  document.getElementById('editItemId').value = editId||'';
+  document.getElementById('modalTitle').textContent = editId?'编辑项目':'添加采购项目';
+  if (editId) {
+    const item = store.items.find(i=>i.id===editId);
+    if (item) {
+      document.getElementById('itemName').value = item.name||'';
+      document.getElementById('itemCategory').value = item.category||'其他';
+      document.getElementById('itemStatus').value = item.status||'待采购';
+      document.getElementById('itemTotal').value = item.total||'';
+      document.getElementById('itemDepositPct').value = item.depositPct||'';
+      document.getElementById('itemBalancePct').value = item.balancePct||'';
+      document.getElementById('itemDelivery').value = item.delivery||'';
+      document.getElementById('itemRemindDays').value = item.remindDays||'3';
+      document.getElementById('itemNote').value = item.note||'';
+    }
+  } else {
+    ['itemName','itemTotal','itemDepositPct','itemBalancePct','itemDelivery','itemNote'].forEach(id=>{
+      document.getElementById(id).value='';
+    });
+    document.getElementById('itemRemindDays').value='3';
+    document.getElementById('itemCategory').value='其他';
+    document.getElementById('itemStatus').value='待采购';
+  }
+  document.getElementById('addModal').classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function saveItem() {
+  const name = document.getElementById('itemName').value.trim();
+  if (!name) { alert('请输入项目名称'); return; }
+  const editId = document.getElementById('editItemId').value;
+  const data = {
+    name, category: document.getElementById('itemCategory').value,
+    status: document.getElementById('itemStatus').value,
+    total: parseFloat(document.getElementById('itemTotal').value)||0,
+    depositPct: parseFloat(document.getElementById('itemDepositPct').value)||0,
+    balancePct: parseFloat(document.getElementById('itemBalancePct').value)||0,
+    delivery: document.getElementById('itemDelivery').value.trim(),
+    remindDays: parseInt(document.getElementById('itemRemindDays').value)||3,
+    note: document.getElementById('itemNote').value.trim(),
+  };
+  if (editId) {
+    const idx = store.items.findIndex(i=>i.id===editId);
+    if (idx>=0) Object.assign(store.items[idx], data);
+  } else {
+    store.items.push({id:uid(), createdAt:Date.now(), ...data});
+  }
+  save();
+  closeModal('addModal');
+  renderTab(getCurrentTab());
+}
+
+// ─── MODAL: PAY ───────────────────────────────────────────────
+function openPayModal(itemId) {
+  const item = store.items.find(i=>i.id===itemId);
+  if (!item) return;
+  document.getElementById('payItemId').value = itemId;
+  document.getElementById('payModalItemName').textContent = '项目：' + item.name;
+  document.getElementById('payDate').value = today();
+  document.getElementById('payAmount').value = '';
+  document.getElementById('payNote').value = '';
+  // Guess amount
+  const paid = paidAmount(itemId);
+  const remaining = item.total - paid;
+  if (remaining > 0) document.getElementById('payAmount').value = Math.round(remaining);
+  document.getElementById('payModal').classList.add('open');
+}
+function savePayment() {
+  const itemId = document.getElementById('payItemId').value;
+  const amount = parseFloat(document.getElementById('payAmount').value)||0;
+  if (!amount) { alert('请输入付款金额'); return; }
+  store.payments.push({
+    id:uid(), itemId,
+    phase: document.getElementById('payPhase').value,
+    amount, date: document.getElementById('payDate').value,
+    note: document.getElementById('payNote').value.trim(),
+    createdAt: Date.now()
+  });
+  save();
+  closeModal('payModal');
+  closeModal('detailModal');
+  renderTab(getCurrentTab());
+}
+
+// ─── DETAIL MODAL ────────────────────────────────────────────
+function openDetail(itemId) {
+  const item = store.items.find(i=>i.id===itemId);
+  if (!item) return;
+  const paid = paidAmount(itemId);
+  const pct = item.total ? Math.min(100,Math.round(paid/item.total*100)) : 0;
+  const remaining = item.total - paid;
+  const dDate = parseDelivery(item.delivery, item.createdAt);
+  const days = daysUntil(dDate);
+  const payments = store.payments.filter(p=>p.itemId===itemId).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  let deliveryHtml = '';
+  if (dDate) {
+    const color = days<0?'var(--ios-red)':days===0?'var(--ios-orange)':days<=item.remindDays?'var(--ios-yellow)':'var(--ios-green)';
+    deliveryHtml = `
+      <div class="list-row">
+        <div style="flex:1;font-size:15px">交货日期</div>
+        <div style="font-size:15px;color:${color};font-weight:500">${dDate} ${days<0?'(逾期'+Math.abs(days)+'天)':days===0?'(今日)':'(还有'+days+'天)'}</div>
+      </div>`;
+  }
+  document.getElementById('detailTitle').textContent = item.name;
+  document.getElementById('detailBody').innerHTML = `
+    <div class="list-group" style="margin-bottom:12px">
+      <div class="list-row">
+        <div style="flex:1;font-size:15px">分类</div>
+        <div style="font-size:15px;color:${categoryColor(item.category)};font-weight:500">${item.category}</div>
+      </div>
+      <div class="list-row">
+        <div style="flex:1;font-size:15px">状态</div>
+        <div>${statusBadge(item.status)}</div>
+      </div>
+      <div class="list-row">
+        <div style="flex:1;font-size:15px">总价</div>
+        <div style="font-size:17px;font-weight:600">¥${fmt(item.total)}</div>
+      </div>
+      ${deliveryHtml}
+      ${item.note?`<div class="list-row"><div style="flex:1;font-size:15px">备注</div><div style="font-size:14px;color:var(--label2)">${item.note}</div></div>`:''}
+    </div>
+    <div class="list-group" style="margin-bottom:12px;padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:14px;color:var(--label2)">付款进度</span>
+        <span style="font-size:14px;font-weight:500">${pct}%</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar" style="width:${pct}%;background:${pct>=100?'var(--ios-green)':'var(--ios-blue)'}"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--label3)">
+        <span>已付 ¥${fmt(paid)}</span>
+        <span>待付 ¥${fmt(remaining)}</span>
+      </div>
+    </div>
+    <div class="list-group" style="margin-bottom:12px">
+      <div style="padding:12px 16px;border-bottom:0.5px solid var(--separator);font-size:15px;font-weight:500">
+        付款记录
+        ${payments.length?'':'<span style="color:var(--label3);font-size:13px;font-weight:400"> · 暂无</span>'}
+      </div>
+      ${payments.map(p=>`
+        <div class="pay-row" style="padding:10px 16px">
+          <div>
+            <div style="font-size:14px;font-weight:500">${p.phase}</div>
+            <div style="font-size:12px;color:var(--label3)">${p.date}${p.note?'・'+p.note:''}</div>
+          </div>
+          <div style="font-size:15px;font-weight:500;color:var(--ios-green)">¥${fmt(p.amount)}</div>
+        </div>`).join('')}
+    </div>
+    <div style="display:flex;gap:10px;flex-direction:column">
+      <button class="btn-primary" onclick="closeModal('detailModal');openPayModal('${item.id}')">记录付款</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn-secondary" style="flex:1" onclick="closeModal('detailModal');openAddModal('${item.id}')">编辑</button>
+        <button class="btn-danger" style="flex:1" onclick="confirmDelete('${item.id}')">删除</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('open');
+}
+function deleteItem(id) {
+  store.items = store.items.filter(i=>i.id!==id);
+  store.payments = store.payments.filter(p=>p.itemId!==id);
+  save();
+  closeModal('detailModal');
+  renderTab(getCurrentTab());
+}
+
+let _pendingDeleteId = null;
+function confirmDelete(id) {
+  _pendingDeleteId = id;
+  document.getElementById('confirmBtn').onclick = () => {
+    if (_pendingDeleteId) { deleteItem(_pendingDeleteId); _pendingDeleteId = null; }
+    closeModal('confirmModal');
+  };
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+// ─── CLOUD SYNC (GitHub Gist with PAT) ───────────────────────────────────
+let _gistUrl = localStorage.getItem('renov_gist_url') || '';
+let _gistId = localStorage.getItem('renov_gist_id') || '';
+let _ghToken = localStorage.getItem('renov_gh_token') || '';
+let _autoSync = !!_ghToken; // auto-sync once token is set
+
+function openSyncModal() {
+  const configured = !!_gistUrl;
+  const tokenSet = !!_ghToken;
+  const statusHtml = configured && tokenSet
+    ? `<div style="padding:12px 14px;background:#34C75915;border-radius:8px;font-size:13px;color:var(--ios-green);margin-bottom:12px">✅ 已配置 · 自动同步已开启</div>`
+    : configured && !tokenSet
+    ? `<div style="padding:12px 14px;background:#FF950015;border-radius:8px;font-size:13px;color:var(--ios-orange);margin-bottom:12px">⚠️ Gist 已配置，但无令牌（需手动同步）</div>`
+    : `<div style="padding:12px 14px;background:#78788015;border-radius:8px;font-size:13px;color:var(--label2);margin-bottom:12px">未配置跨设备同步</div>`;
+  document.getElementById('syncBody').innerHTML = `
+    ${statusHtml}
+
+    <div class="list-group" style="margin-bottom:10px">
+      <div class="list-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px;width:100%">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--ios-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0">1</div>
+          <div style="font-size:15px;font-weight:500">粘贴 GitHub 令牌（推荐）</div>
+        </div>
+        <div style="font-size:13px;color:var(--label2);line-height:1.6;padding-left:34px">
+          只需gist权限，创建后 App 自动同步，无需手动操作。
+        </div>
+        <div style="padding-left:34px;width:100%">
+          <input class="form-control" type="password" id="ghTokenInput" placeholder="ghp_xxxxxxxxxxxxx" value="${_ghToken}" style="font-size:14px">
+        </div>
+        <div style="padding-left:34px;width:100%;display:flex;gap:8px">
+          <button class="btn-secondary" style="flex:1;font-size:13px;padding:8px" onclick="setupGithubToken()">🔑 保存令牌</button>
+          <button class="btn-secondary" style="flex:1;font-size:13px;padding:8px" onclick="autoSyncNow()">☁️ 立即同步</button>
+        </div>
+        <div id="tokenStatus" style="padding-left:34px;font-size:12px;color:var(--label3);width:100%"></div>
+      </div>
+    </div>
+
+    <div id="gistSection" style="${!configured?'display:none':''}">
+      <div class="list-group" style="margin-bottom:10px">
+        <div class="list-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px;width:100%">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--ios-green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0">✓</div>
+            <div style="font-size:15px;font-weight:500">Gist 地址</div>
+          </div>
+          <div style="padding-left:34px;width:100%">
+            <input class="form-control" type="url" id="syncGistInput" value="${_gistUrl}" style="font-size:14px" readonly>
+          </div>
+          <div style="padding-left:34px;width:100%;display:flex;gap:8px">
+            <button class="btn-secondary" style="flex:1;font-size:12px;padding:7px" onclick="window.open(_gistUrl,'_blank')">🔗 打开 Gist</button>
+            <button class="btn-secondary" style="flex:1;font-size:12px;padding:7px" onclick="copyGistUrl()">📋 复制链接</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="manualSyncSection">
+      <div class="list-group">
+        <div class="list-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+          <div style="font-size:15px;font-weight:500">手动导出 / 导入（无需账号）</div>
+          <div style="font-size:13px;color:var(--label3);line-height:1.6">导出发到微信文件传输助手，其他设备导入。</div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn-secondary" style="flex:1;font-size:13px;padding:8px" onclick="exportData()">📤 导出</button>
+            <button class="btn-secondary" style="flex:1;font-size:13px;padding:8px" onclick="document.getElementById('importFile2').click()">📥 导入</button>
+          </div>
+          <input type="file" id="importFile2" accept=".json" style="display:none" onchange="importDataFile2(this)">
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('syncModal').classList.add('open');
+}
+
+// Setup GitHub token and auto-create gist
+async function setupGithubToken() {
+  const token = document.getElementById('ghTokenInput').value.trim();
+  const statusEl = document.getElementById('tokenStatus');
+  if (!token || !token.startsWith('ghp_')) {
+    statusEl.textContent = '❌ 令牌格式不对，应以 ghp_ 开头';
+    statusEl.style.color = 'var(--ios-red)';
+    return;
+  }
+  statusEl.textContent = '⏳ 正在验证令牌并创建 Gist...';
+  statusEl.style.color = 'var(--label3)';
+  try {
+    // Test token by creating a gist
+    const payload = {
+      description: '装修账本数据 (renovation.app)',
+      public: true,
+      files: {
+        'renovation_data.json': { content: JSON.stringify(store, null, 2) }
+      }
+    };
+    const r = await fetch('https://api.github.com/gists', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.message || '创建失败');
+    }
+    const data = await r.json();
+    _gistId = data.id;
+    _gistUrl = data.html_url;
+    _ghToken = token;
+    _autoSync = true;
+    localStorage.setItem('renov_gh_token', token);
+    localStorage.setItem('renov_gist_id', _gistId);
+    localStorage.setItem('renov_gist_url', _gistUrl);
+    statusEl.innerHTML = '✅ Gist 创建成功！已开启自动同步';
+    statusEl.style.color = 'var(--ios-green)';
+    document.getElementById('gistSection').style.display = '';
+    document.getElementById('syncGistInput').value = _gistUrl;
+    // Update overview badge
+    renderOverview();
+  } catch(e) {
+    statusEl.textContent = '❌ 失败：' + e.message;
+    statusEl.style.color = 'var(--ios-red)';
+  }
+}
+
+// Auto-sync to existing gist
+async function autoSyncNow() {
+  if (!_ghToken || !_gistId) {
+    if (!_ghToken) alert('请先在设置里输入 GitHub 令牌');
+    return;
+  }
+  const statusEl = document.getElementById('tokenStatus') || { textContent: '', style: {} };
+  statusEl.textContent = '⏳ 正在同步...';
+  statusEl.style.color = 'var(--label3)';
+  try {
+    const payload = {
+      description: '装修账本数据 (renovation.app)',
+      files: {
+        'renovation_data.json': { content: JSON.stringify(store, null, 2) }
+      }
+    };
+    const r = await fetch('https://api.github.com/gists/' + _gistId, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Bearer ' + _ghToken,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error('同步失败');
+    statusEl.textContent = '✅ 同步成功！';
+    statusEl.style.color = 'var(--ios-green)';
+    renderOverview();
+  } catch(e) {
+    statusEl.textContent = '❌ 同步失败：' + e.message;
+    statusEl.style.color = 'var(--ios-red)';
+  }
+}
+
+// Auto-sync after every save (when token is set)
+async function autoSyncToGist() {
+  if (!_autoSync || !_ghToken || !_gistId) return;
+  try {
+    const payload = {
+      description: '装修账本数据 (renovation.app)',
+      files: {
+        'renovation_data.json': { content: JSON.stringify(store, null, 2) }
+      }
+    };
+    await fetch('https://api.github.com/gists/' + _gistId, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Bearer ' + _ghToken,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch(e) { /* silent fail */ }
+}
+
+function copyGistUrl() {
+  navigator.clipboard.writeText(_gistUrl).then(() => {
+    const el = document.getElementById('tokenStatus');
+    if (el) { el.textContent = '✅ 链接已复制'; el.style.color = 'var(--ios-green)'; }
+  });
+}
+
+function _extractGistRawUrl(url) {
+  const m = url.match(/gist\.github\.com\/([^\/]+)\/([a-f0-9]+)/i);
+  if (m) return 'https://gist.githubusercontent.com/' + m[1] + '/' + m[2] + '/raw';
+  if (url.includes('raw.githubusercontent.com')) return url.split('?')[0];
+  return null;
+}
+
+async function testGist() {
+  const url = document.getElementById('syncGistInput')?.value.trim() || _gistUrl;
+  const rawUrl = _extractGistRawUrl(url);
+  const statusEl = document.getElementById('gistStatus') || document.getElementById('tokenStatus');
+  if (!rawUrl) {
+    if (statusEl) { statusEl.textContent = '地址格式不对'; statusEl.style.color = 'var(--ios-red)'; }
+    return;
+  }
+  if (statusEl) { statusEl.textContent = '正在测试...'; statusEl.style.color = 'var(--label3)'; }
+  try {
+    const r = await fetch(rawUrl);
+    if (r.ok) {
+      const text = await r.text();
+      try { JSON.parse(text); if (statusEl) { statusEl.textContent = '✅ 连接成功'; statusEl.style.color = 'var(--ios-green)'; } }
+      catch { if (statusEl) { statusEl.textContent = '⚠️ 内容不是 JSON'; statusEl.style.color = 'var(--ios-orange)'; } }
+    } else {
+      if (statusEl) { statusEl.textContent = '❌ 连接失败，请确保 Gist 公开'; statusEl.style.color = 'var(--ios-red)'; }
+    }
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = '❌ 网络错误'; statusEl.style.color = 'var(--ios-red)'; }
+  }
+}
+
+async function saveGist() {
+  const url = document.getElementById('syncGistInput')?.value.trim() || _gistUrl;
+  const rawUrl = _extractGistRawUrl(url);
+  const statusEl = document.getElementById('gistStatus');
+  if (!rawUrl) {
+    if (statusEl) { statusEl.textContent = '请先粘贴 Gist 网址'; statusEl.style.color = 'var(--ios-red)'; }
+    return;
+  }
+  if (statusEl) { statusEl.textContent = '正在同步...'; statusEl.style.color = 'var(--label3)'; }
+  try {
+    const r = await fetch(rawUrl);
+    if (!r.ok) throw new Error('读取失败');
+    const text = await r.text();
+    try {
+      const parsed = JSON.parse(text);
+      const mergedItems = {};
+      [...(parsed.items||[]), ...store.items].forEach(i => {
+        if (!mergedItems[i.id] || (i.createdAt > mergedItems[i.id].createdAt)) mergedItems[i.id] = i;
+      });
+      const mergedPayments = {};
+      [...(parsed.payments||[]), ...store.payments].forEach(p => {
+        if (!mergedPayments[p.id] || (p.createdAt > mergedPayments[p.id]?.createdAt)) mergedPayments[p.id] = p;
+      });
+      store.items = Object.values(mergedItems);
+      store.payments = Object.values(mergedPayments);
+      await save();
+    } catch(e) { /* not JSON, keep local */ }
+    if (statusEl) { statusEl.innerHTML = '✅ 同步成功！'; statusEl.style.color = 'var(--ios-green)'; }
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = '❌ 读取失败'; statusEl.style.color = 'var(--ios-red)'; }
+  }
+  _gistUrl = url;
+  localStorage.setItem('renov_gist_url', url);
+  setTimeout(()=>{ closeModal('syncModal'); renderOverview(); }, 1500);
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(store, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = 'renovation_data.json';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function importDataFile(input) { _doImport(input.files[0]); }
+function importDataFile2(input) { _doImport(input.files[0]); }
+function _doImport(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.items && data.payments) {
+        store = data;
+        save();
+        renderTab(getCurrentTab());
+        alert('导入成功！共 ' + store.items.length + ' 个项目');
+      } else { alert('文件格式不对'); }
+    } catch(err) { alert('导入失败：' + err.message); }
+  };
+  reader.readAsText(file);
+}
+
+// ─── UTILS ───────────────────────────────────────────────────
+function getCurrentTab() {
+  const active = document.querySelector('.tab-item.active');
+  return active ? active.dataset.tab : 'overview';
+}
+
+// ─── DEMO DATA (first launch) ─────────────────────────────────
+function seedDemo() {
+  if (store.items.length) return;
+  const now = Date.now();
+  store.items = [
+    {id:'demo1',createdAt:now-86400000*5,name:'客厅木地板',category:'地板',status:'已下单',total:18000,depositPct:30,balancePct:70,delivery:'15',remindDays:3,note:'强化复合地板'},
+    {id:'demo2',createdAt:now-86400000*3,name:'卫浴洁具套装',category:'卫浴',status:'待采购',total:8500,depositPct:50,balancePct:50,delivery:'20',remindDays:3,note:''},
+    {id:'demo3',createdAt:now-86400000*2,name:'水电改造人工',category:'水电',status:'已完成',total:12000,depositPct:30,balancePct:70,delivery:'',remindDays:3,note:''},
+    {id:'demo4',createdAt:now-86400000*1,name:'厨房橱柜',category:'厨房',status:'待采购',total:25000,depositPct:30,balancePct:70,delivery:'2026-05-25',remindDays:5,note:'欧派定制'},
+  ];
+  store.payments = [
+    {id:'p1',itemId:'demo1',phase:'首付',amount:5400,date:'2026-05-08',note:'',createdAt:now-86400000*3},
+    {id:'p2',itemId:'demo3',phase:'尾款',amount:12000,date:'2026-05-11',note:'验收合格',createdAt:now-86400000*2},
+    {id:'p3',itemId:'demo4',phase:'定金',amount:5000,date:'2026-05-12',note:'',createdAt:now-86400000*1},
+  ];
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+document.getElementById('fabBtn').style.display = 'none';
+load().then(() => {
+  seedDemo();
+  renderOverview();
+  if (store.items.length) save();
+  setTimeout(()=>{
+    const urgent = getUrgentAlerts();
+    if (urgent.length) {
+      const alertTab = document.querySelector('[data-tab="alerts"]');
+      if (!alertTab.querySelector('.notif-dot')) {
+        const d = document.createElement('div');
+        d.className = 'notif-dot';
+        alertTab.appendChild(d);
+      }
+    }
+  }, 100);
+});
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay=>{
+  overlay.addEventListener('click', e=>{
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+</script>
+</body>
+</html>
