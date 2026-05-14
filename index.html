@@ -562,17 +562,23 @@ function openDB() {
   });
 }
 
+// 正确的 Gist ID（包含用户真实数据），无 token 时也尝试加载
+const _DEFAULT_GIST_ID = 'a603d3f912c62d915173e67d40ef8e7f';
+
 async function load() {
   _gistUrl = localStorage.getItem('renov_gist_url') || '';
-  _gistId = localStorage.getItem('renov_gist_id') || '';
+  _gistId = localStorage.getItem('renov_gist_id') || _DEFAULT_GIST_ID;
   _ghToken = localStorage.getItem('renov_gh_token') || '';
   _autoSync = !!_ghToken;
   try {
     db = await openDB();
-    // Try loading from Gist first (if token set)
-    if (_autoSync && _gistId) {
+    // 无 token 时通过 raw_url 读取公开 Gist；有 token 时优先用 API
+    const loadGistId = _gistId || _DEFAULT_GIST_ID;
+    let loaded = false;
+    // 方式1：有 token，用 API
+    if (_autoSync && loadGistId) {
       try {
-        const r = await fetch('https://api.github.com/gists/' + _gistId, {
+        const r = await fetch('https://api.github.com/gists/' + loadGistId, {
           headers: { 'Authorization': 'Bearer ' + _ghToken, 'Accept': 'application/vnd.github+json' }
         });
         if (r.ok) {
@@ -580,17 +586,37 @@ async function load() {
           const file = data.files && data.files['renovation_data.json'];
           if (file && file.content) {
             const parsed = JSON.parse(file.content);
-            if (parsed.items && parsed.payments) {
+            if (parsed.items && parsed.payments !== undefined) {
               store = parsed;
-              // Save to IndexedDB
               const tx2 = db.transaction('data', 'readwrite');
               tx2.objectStore('data').put({ key: STORE_KEY, value: store });
-              return;
+              loaded = true;
             }
           }
         }
-      } catch(gistErr) { /* fall through to IndexedDB */ }
+      } catch(gistErr) { /* fall through */ }
     }
+    // 方式2：无 token 或 API 失败，通过 raw_url 读取公开 Gist
+    if (!loaded) {
+      try {
+        const rawUrl = 'https://gist.githubusercontent.com/WYH509/' + loadGistId + '/raw/renovation_data.json';
+        const r = await fetch(rawUrl);
+        if (r.ok) {
+          const parsed = await r.json();
+          if (parsed.items && parsed.payments !== undefined) {
+            store = parsed;
+            const tx2 = db.transaction('data', 'readwrite');
+            tx2.objectStore('data').put({ key: STORE_KEY, value: store });
+            // 若本地无 Gist ID，补上（用于后续同步）
+            if (!localStorage.getItem('renov_gist_id')) {
+              localStorage.setItem('renov_gist_id', loadGistId);
+            }
+            loaded = true;
+          }
+        }
+      } catch(e) { /* fall through */ }
+    }
+    if (loaded) return;
     // Fallback to IndexedDB
     const tx = db.transaction('data', 'readonly');
     const os = tx.objectStore('data');
